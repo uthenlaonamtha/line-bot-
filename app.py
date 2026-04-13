@@ -55,11 +55,17 @@ def handle_text_message(event: MessageEvent):
     print(f"Received message: {user_message}")
 
     try:
+        # ดึงชื่อ LINE ของผู้ส่ง
+        with ApiClient(configuration) as api_client:
+            messaging_api = MessagingApi(api_client)
+            profile = messaging_api.get_profile(event.source.user_id)
+            display_name = profile.display_name
+
         # ส่งข้อความไปให้ Claude AI ตอบ
         response = claude.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=1024,
-            system="คุณเป็นผู้ช่วย AI ที่ตอบคำถามเป็นภาษาไทย ตอบสั้น กระชับ เข้าใจง่าย เหมาะกับการแชทใน LINE",
+            system=f"คุณเป็นผู้ช่วย AI ที่ตอบคำถามเป็นภาษาไทย ตอบสั้น กระชับ เข้าใจง่าย เหมาะกับการแชทใน LINE ชื่อผู้ใช้คือ {display_name} เริ่มต้นทักทายด้วย สวัสดีครับ {display_name}",
             messages=[
                 {"role": "user", "content": user_message}
             ],
