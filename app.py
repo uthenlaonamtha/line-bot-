@@ -20,6 +20,8 @@ LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
+BOT_USER_ID = "Ucec80d992abfe01b28e69a9beebc5c11"
+
 app = FastAPI(title="LINEAI")
 
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
@@ -60,12 +62,14 @@ def handle_text_message(event: MessageEvent):
         is_mentioned = False
         if mention and mention.mentionees:
             for m in mention.mentionees:
-                if getattr(m, "is_self", False) or getattr(m, "type", "") == "all":
+                user_id = getattr(m, "user_id", None)
+                if user_id == BOT_USER_ID:
                     is_mentioned = True
                     break
         if not is_mentioned:
-            print("Not mentioned in group, skipping")
+            print(f"Not mentioned in group, skipping. Mention: {mention}")
             return
+        print(f"Bot was mentioned in group!")
 
     try:
         # ดึงชื่อ LINE ของผู้ส่ง
