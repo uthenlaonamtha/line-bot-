@@ -1,4 +1,5 @@
 import os
+import traceback
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException
 from linebot.v3 import WebhookHandler
@@ -35,44 +36,50 @@ async def root():
 async def webhook(request: Request):
     signature = request.headers.get("X-Line-Signature", "")
     body = (await request.body()).decode("utf-8")
+    print(f"Received webhook: {body[:200]}")
 
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
-        print(f"Invalid signature. Body: {body[:100]}")
+        print(f"Invalid signature")
         raise HTTPException(status_code=400, detail="Invalid signature")
     except Exception as e:
-        print(f"Webhook error (ignored): {e}")
+        print(f"Webhook error: {traceback.format_exc()}")
 
     return "OK"
-
 
 
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event: MessageEvent):
     user_message = event.message.text
+    print(f"Received message: {user_message}")
 
-    # ส่งข้อความไปให้ Claude AI ตอบ
-    response = claude.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1024,
-        system="คุณเป็นผู้ช่วย AI ที่ตอบคำถามเป็นภาษาไทย ตอบสั้น กระชับ เข้าใจง่าย เหมาะกับการแชทใน LINE",
-        messages=[
-            {"role": "user", "content": user_message}
-        ],
-    )
-
-    reply_text = response.content[0].text
-
-    # ตอบกลับไปใน LINE
-    with ApiClient(configuration) as api_client:
-        messaging_api = MessagingApi(api_client)
-        messaging_api.reply_message(
-            ReplyMessageRequest(
-                reply_token=event.reply_token,
-                messages=[TextMessage(text=reply_text)]
-            )
+    try:
+        # ส่งข้อความไปให้ Claude AI ตอบ
+        response = claude.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            system="คุณเป็นผู้ช่วย AI ที่ตอบคำถามเป็นภาษาไทย ตอบสั้น กระชับ เข้าใจง่าย เหมาะกับการแชทใน LINE",
+            messages=[
+                {"role": "user", "content": user_message}
+            ],
         )
+
+        reply_text = response.content[0].text
+        print(f"Claude reply: {reply_text}")
+
+        # ตอบกลับไปใน LINE
+        with ApiClient(configuration) as api_client:
+            messaging_api = MessagingApi(api_client)
+            messaging_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text=reply_text)]
+                )
+            )
+        print("Reply sent successfully")
+    except Exception as e:
+        print(f"Error handling message: {traceback.format_exc()}")
 
 
 if __name__ == "__main__":
