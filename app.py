@@ -52,7 +52,20 @@ async def webhook(request: Request):
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event: MessageEvent):
     user_message = event.message.text
-    print(f"Received message: {user_message}")
+    print(f"Received message: {user_message} from {event.source.type}")
+
+    # ในกลุ่ม: ตอบเฉพาะเมื่อถูก Mention เท่านั้น
+    if event.source.type == "group":
+        mention = getattr(event.message, "mention", None)
+        is_mentioned = False
+        if mention and mention.mentionees:
+            for m in mention.mentionees:
+                if getattr(m, "is_self", False) or getattr(m, "type", "") == "all":
+                    is_mentioned = True
+                    break
+        if not is_mentioned:
+            print("Not mentioned in group, skipping")
+            return
 
     try:
         # ดึงชื่อ LINE ของผู้ส่ง
