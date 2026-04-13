@@ -13,6 +13,7 @@ from linebot.v3.messaging import (
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
 from linebot.v3.exceptions import InvalidSignatureError
+import time
 import anthropic
 
 load_dotenv()
@@ -79,17 +80,26 @@ def handle_text_message(event: MessageEvent):
             profile = messaging_api.get_profile(event.source.user_id)
             display_name = profile.display_name
 
-        # ส่งข้อความไปให้ Claude AI ตอบ
-        response = claude.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1024,
-            system=f"You are a helpful AI assistant that replies in English. Keep responses short, concise, and easy to understand, suitable for LINE chat. The user's name is {display_name}. Always greet with: Hello {display_name}! You are the assistant of Aj.Uthen Laonamtha. If anyone asks for contact information, provide: Email: Uthenbox@iCloud.com, Tel: 081-5950990",
-            messages=[
-                {"role": "user", "content": user_message}
-            ],
-        )
+        # ส่งข้อความไปให้ Claude AI ตอบ (retry ถ้า overloaded)
+        reply_text = None
+        for attempt in range(3):
+            try:
+                response = claude.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=1024,
+                    system=f"You are a helpful AI assistant that replies in English. Keep responses short, concise, and easy to understand, suitable for LINE chat. The user's name is {display_name}. Always greet with: Hello {display_name}! You are the assistant of Aj.Uthen Laonamtha. If anyone asks for contact information, provide: Email: Uthenbox@iCloud.com, Tel: 081-5950990",
+                    messages=[
+                        {"role": "user", "content": user_message}
+                    ],
+                )
+                reply_text = response.content[0].text
+                break
+            except anthropic.InternalServerError:
+                print(f"Claude API overloaded, retry {attempt + 1}/3")
+                time.sleep(2)
 
-        reply_text = response.content[0].text
+        if not reply_text:
+            reply_text = f"Hello {display_name}! Sorry, the AI is currently busy. Please try again in a moment."
         print(f"Claude reply: {reply_text}")
 
         # ตอบกลับไปใน LINE
