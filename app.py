@@ -83,7 +83,7 @@ def handle_text_message(event: MessageEvent):
         response = claude.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=1024,
-            system=f"You are a helpful AI assistant that replies in English. Keep responses short, concise, and easy to understand, suitable for LINE chat. The user's name is {display_name}. Always greet with: Hello {display_name}!",
+            system=f"You are a helpful AI assistant that replies in English. Keep responses short, concise, and easy to understand, suitable for LINE chat. The user's name is {display_name}. Always greet with: Hello {display_name}! You are the assistant of Aj.Uthen Laonamtha. If anyone asks for contact information, provide: Email: Uthenbox@iCloud.com, Tel: 081-5950990",
             messages=[
                 {"role": "user", "content": user_message}
             ],
