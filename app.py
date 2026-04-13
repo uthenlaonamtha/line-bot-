@@ -36,12 +36,15 @@ async def webhook(request: Request):
     signature = request.headers.get("X-Line-Signature", "")
     body = (await request.body()).decode("utf-8")
 
+    if not signature:
+        return "OK"
+
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
         raise HTTPException(status_code=400, detail="Invalid signature")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error: {e}")
 
     return "OK"
 
