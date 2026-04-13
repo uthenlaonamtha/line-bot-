@@ -1,5 +1,7 @@
 import os
 import traceback
+import httpx
+from datetime import datetime
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException
 from linebot.v3 import WebhookHandler
@@ -10,7 +12,7 @@ from linebot.v3.messaging import (
     ReplyMessageRequest,
     TextMessage,
 )
-from linebot.v3.webhooks import MessageEvent, TextMessageContent
+from linebot.v3.webhooks import MessageEvent, TextMessageContent, ImageMessageContent
 from linebot.v3.exceptions import InvalidSignatureError
 import anthropic
 
@@ -21,6 +23,9 @@ LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 app = FastAPI(title="LINE Bot with Claude AI")
+
+SAVE_DIR = "พารวย"
+os.makedirs(SAVE_DIR, exist_ok=True)
 
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
@@ -86,6 +91,47 @@ def handle_text_message(event: MessageEvent):
         print("Reply sent successfully")
     except Exception as e:
         print(f"Error handling message: {traceback.format_exc()}")
+
+
+@handler.add(MessageEvent, message=ImageMessageContent)
+def handle_image_message(event: MessageEvent):
+    message_id = event.message.id
+    print(f"Received image: {message_id}")
+
+    try:
+        # ดึงชื่อ LINE ของผู้ส่ง
+        with ApiClient(configuration) as api_client:
+            messaging_api = MessagingApi(api_client)
+            profile = messaging_api.get_profile(event.source.user_id)
+            display_name = profile.display_name
+
+        # ดาวน์โหลดรูปจาก LINE
+        url = f"https://api-data.line.me/v2/bot/message/{message_id}/content"
+        headers = {"Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"}
+        response = httpx.get(url, headers=headers)
+
+        # บันทึกรูปในโฟลเดอร์ "พารวย"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{display_name}_{timestamp}.jpg"
+        filepath = os.path.join(SAVE_DIR, filename)
+
+        with open(filepath, "wb") as f:
+            f.write(response.content)
+
+        print(f"Image saved: {filepath}")
+
+        # ตอบกลับ
+        with ApiClient(configuration) as api_client:
+            messaging_api = MessagingApi(api_client)
+            messaging_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[TextMessage(text=f"สวัสดีครับ {display_name} ได้รับรูปภาพแล้วครับ บันทึกเรียบร้อย 📸")]
+                )
+            )
+        print("Image reply sent successfully")
+    except Exception as e:
+        print(f"Error handling image: {traceback.format_exc()}")
 
 
 if __name__ == "__main__":
