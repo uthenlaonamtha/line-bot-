@@ -83,7 +83,7 @@ def handle_text_message(event: MessageEvent):
         response = claude.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=1024,
-            system=f"คุณเป็นผู้ช่วย AI ที่ตอบคำถามเป็นภาษาไทย ตอบสั้น กระชับ เข้าใจง่าย เหมาะกับการแชทใน LINE ชื่อผู้ใช้คือ {display_name} เริ่มต้นทักทายด้วย สวัสดีครับ {display_name}",
+            system=f"You are a helpful AI assistant that replies in English. Keep responses short, concise, and easy to understand, suitable for LINE chat. The user's name is {display_name}. Always greet with: Hello {display_name}!",
             messages=[
                 {"role": "user", "content": user_message}
             ],
