@@ -47,10 +47,6 @@ async def webhook(request: Request):
     return "OK"
 
 
-@handler.default()
-def handle_default(event):
-    print(f"Unhandled event: {event}")
-
 
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event: MessageEvent):
