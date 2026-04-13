@@ -40,6 +40,8 @@ async def webhook(request: Request):
         handler.handle(body, signature)
     except InvalidSignatureError:
         raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception:
+        pass
 
     return "OK"
 
