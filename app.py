@@ -20,7 +20,7 @@ LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
-app = FastAPI(title="Uthen LINE AI")
+app = FastAPI(title="LINEAI")
 
 configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
@@ -29,7 +29,7 @@ claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 @app.get("/")
 async def root():
-    return {"status": "Uthen LINE AI is running!"}
+    return {"status": "LINEAI is running!"}
 
 
 @app.post("/webhook")
